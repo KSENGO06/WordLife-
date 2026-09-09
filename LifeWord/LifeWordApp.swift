@@ -1,17 +1,21 @@
-//
-//  LifeWordApp.swift
-//  LifeWord
-//
-//  Created by Oksana on 04.09.2026.
-//
-
 import SwiftUI
 
 @main
 struct LifeWordApp: App {
+    private let contentRepository = BundledJSONContentRepository()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationStack {
+                CategoriesListView(
+                    getCategoriesUseCase: GetCategoriesUseCase(repository: contentRepository),
+                    getWordsUseCase: GetWordsUseCase(repository: contentRepository),
+                    getSceneUseCase: GetSceneUseCase(repository: contentRepository),
+                    getSentencesUseCase: GetSentenceExercisesUseCase(repository: contentRepository),
+                    getSentenceChoicesUseCase: GetSentenceChoiceExercisesUseCase(repository: contentRepository),
+                    audioPlayer: SpeechAudioPlayer()
+                )
+            }
         }
     }
 }
