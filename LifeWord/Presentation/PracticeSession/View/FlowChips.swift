@@ -5,15 +5,15 @@ struct FlowChips: View {
     let selectedId: String?
     let onTap: (Word) -> Void
 
-    private let columns = [GridItem(.adaptive(minimum: 90), spacing: 8)]
-
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+        FlowLayout(spacing: 8) {
             ForEach(words) { word in
                 Button {
                     onTap(word)
                 } label: {
                     Text(word.translation)
+                        .font(.appBodyRegular)
+                        .fixedSize(horizontal: true, vertical: false)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(selectedId == word.id ? Color.blue.opacity(0.3) : Color(.secondarySystemBackground))

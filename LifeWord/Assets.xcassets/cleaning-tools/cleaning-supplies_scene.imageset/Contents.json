@@ -1,0 +1,21 @@
+{
+  "images": [
+    {
+      "filename": "exec-5aeb5ae0-92c5-4e90-bee3-90fd312155b5.heic",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

@@ -7,4 +7,8 @@ protocol ContentRepository {
     func loadScenes() async throws -> [RoomScene]
     func loadSentenceChoiceExercises() async throws -> [SentenceChoiceExercise]
     func getCategories() async throws -> [Category]
+    func getThemes() async throws -> [Theme]
+    // MARK: - Фразові дієслова
+    func loadTranslationExercises() async throws -> [TranslationExercise]
+    func loadClozeExercises() async throws -> [ClozeExercise]
 }

@@ -17,4 +17,18 @@ enum FlatSection: Hashable {
         case .level(let level, let section): return "level\(level).\(section)"
         }
     }
+
+    var iconAssetName: String {
+        switch self {
+        case .practice(let section): return section.iconAssetName
+        case .level(_, let section): return section.iconAssetName
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .practice(let section): return section.symbolName
+        case .level(_, let section): return section.symbolName
+        }
+    }
 }

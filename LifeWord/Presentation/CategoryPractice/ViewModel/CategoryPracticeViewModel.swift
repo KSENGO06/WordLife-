@@ -22,12 +22,21 @@ final class CategoryPracticeViewModel {
 
     var categoryIconName: String { "\(categoryId)_scene" }
 
+    /// Загальний прогрес по категорії (для шапки екрана) — скільки з усіх вправ пройдено.
+    var totalSectionsCount: Int {
+        PracticeSectionType.allCases.count + LevelSectionType.level1Cases.count + LevelSectionType.level2Cases.count
+    }
+    var completedSectionsCount: Int {
+        completedSections.count + completedLevel1Sections.count + completedLevel2Sections.count
+    }
+
     init(categoryId: String, getWordsUseCase: GetWordsUseCase, getSentencesUseCase: GetSentenceExercisesUseCase, getSentenceChoicesUseCase: GetSentenceChoiceExercisesUseCase) {
         self.categoryId = categoryId
         self.getWordsUseCase = getWordsUseCase
         self.getSentencesUseCase = getSentencesUseCase
         self.getSentenceChoicesUseCase = getSentenceChoicesUseCase
         loadProgress()
+        loadCompleted()
     }
 
     @MainActor
@@ -37,16 +46,20 @@ final class CategoryPracticeViewModel {
         let wordIds = words.map { $0.id }
         sentencesLevel1 = (try? await getSentencesUseCase.execute(wordIds: wordIds, level: 1)) ?? []
         sentencesLevel2 = (try? await getSentencesUseCase.execute(wordIds: wordIds, level: 2)) ?? []
-        sentenceChoices = (try? await getSentenceChoicesUseCase.execute()) ?? []
+        sentenceChoices = (try? await getSentenceChoicesUseCase.execute(wordIds: wordIds)) ?? []
         isLoading = false
     }
 
     func markCompleted(_ section: PracticeSectionType) {
         completedSections.insert(section)
+        ActivityManager.shared.recordSectionCompleted(categoryId: categoryId)
+        persistCompleted()
     }
 
     func markCompleted(level: Int, _ section: LevelSectionType) {
         if level == 1 { completedLevel1Sections.insert(section) } else { completedLevel2Sections.insert(section) }
+        ActivityManager.shared.recordSectionCompleted(categoryId: categoryId)
+        persistCompleted()
     }
 
     func isCompleted(_ section: FlatSection) -> Bool {
@@ -88,8 +101,8 @@ final class CategoryPracticeViewModel {
             case .puzzleTarget: return allLevel1Completed
             case .puzzleNative: return completedLevel2Sections.contains(.puzzleTarget)
             case .listening: return completedLevel2Sections.contains(.puzzleNative)
-            case .fillBlank: return completedLevel2Sections.contains(.listening)
-            case .sentenceChoice: return completedLevel2Sections.contains(.fillBlank)
+            case .fillBlank: return false
+            case .sentenceChoice: return completedLevel2Sections.contains(.listening)
             }
         }
         #endif
@@ -156,5 +169,32 @@ final class CategoryPracticeViewModel {
         if let data = try? JSONEncoder().encode(sectionProgress) {
             UserDefaults.standard.set(data, forKey: progressDefaultsKey)
         }
+    }
+
+    // MARK: - Завершені секції (постійне збереження для % на головному екрані)
+
+    private func loadCompleted() {
+        for key in CategoryProgressStore.completedRegularKeys(categoryId) {
+            let parts = key.components(separatedBy: ".")
+            guard parts.count == 2 else { continue }
+            let (group, raw) = (parts[0], parts[1])
+            switch group {
+            case "practice":
+                if let s = PracticeSectionType(rawValue: raw) { completedSections.insert(s) }
+            case "level1":
+                if let s = LevelSectionType(rawValue: raw) { completedLevel1Sections.insert(s) }
+            case "level2":
+                if let s = LevelSectionType(rawValue: raw) { completedLevel2Sections.insert(s) }
+            default:
+                break
+            }
+        }
+    }
+
+    private func persistCompleted() {
+        let keys = completedSections.map { FlatSection.practice($0).progressKey }
+            + completedLevel1Sections.map { FlatSection.level(1, $0).progressKey }
+            + completedLevel2Sections.map { FlatSection.level(2, $0).progressKey }
+        CategoryProgressStore.setCompletedRegularKeys(Set(keys), for: categoryId)
     }
 }

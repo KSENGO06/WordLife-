@@ -11,22 +11,34 @@ enum LevelSectionType: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .puzzleTarget: return "Пазл на вивченій мові"
-        case .puzzleNative: return "Пазл на рідній мові"
-        case .listening: return "Аудіювання"
-        case .fillBlank: return "Тест"
-        case .sentenceChoice: return "Правильні речення"
+        case .puzzleTarget: return "Puzzle in English"
+        case .puzzleNative: return "Puzzle in Ukrainian"
+        case .listening: return "Listening"
+        case .fillBlank: return "Quiz"
+        case .sentenceChoice: return "Correct Sentences"
         }
     }
 
     var subtitle: String {
         switch self {
-        case .fillBlank: return "Заповніть пропуск"
-        case .sentenceChoice: return "Виберіть правильні варіанти"
-        default: return "Складіть речення"
+        case .fillBlank: return "Fill in the blank"
+        case .sentenceChoice: return "Choose the correct options"
+        default: return "Build the sentence"
+        }
+    }
+
+    /// Custom icon to drop into Assets.xcassets (falls back to an SF Symbol until it's there).
+    var iconAssetName: String { "exercise_\(rawValue)" }
+
+    var symbolName: String {
+        switch self {
+        case .puzzleTarget, .puzzleNative: return "puzzlepiece.fill"
+        case .listening: return "headphones"
+        case .fillBlank: return "square.and.pencil"
+        case .sentenceChoice: return "checklist"
         }
     }
 
     static let level1Cases: [LevelSectionType] = [.puzzleTarget, .puzzleNative, .listening, .fillBlank]
-    static let level2Cases: [LevelSectionType] = [.puzzleTarget, .puzzleNative, .listening, .fillBlank, .sentenceChoice]
+    static let level2Cases: [LevelSectionType] = [.puzzleTarget, .puzzleNative, .listening, .sentenceChoice]
 }

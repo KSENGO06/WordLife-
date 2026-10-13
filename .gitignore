@@ -20,3 +20,14 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Secrets
+GoogleService-Info*.plist
+.env
+
+# Local helper scripts
+_edit_*.py
+
+# Temporary folders
+_to_delete/
+_tmp_*/

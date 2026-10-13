@@ -9,8 +9,15 @@ struct Category: Identifiable, Codable {
     let name: String
     let icon: String
     let order: Int
+    let themeId: String
+    let type: CategoryType?
+    var isPhrasalVerbs: Bool { type == .phrasalVerbs }
 }
-
+enum CategoryType: String, Codable {
+    case words
+    case phrasalVerbs
+}
+ 
 struct Word: Identifiable, Codable {
     let id: String
     let term: String

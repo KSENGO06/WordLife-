@@ -14,15 +14,22 @@ final class HeartsManager {
     private let heartsKey = "hearts.lost"
     private let lastLossKey = "hearts.lastLossAt"
 
+    /// true, поки діє підписка — серця тоді не витрачаються.
+    var isUnlimited: Bool { PremiumManager.shared.isPremium }
+
     var hearts: Int { Self.maxHearts - heartsLost }
 
     private init() {
         heartsLost = UserDefaults.standard.integer(forKey: heartsKey)
         lastLossAt = UserDefaults.standard.object(forKey: lastLossKey) as? Date
         regenerateIfNeeded()
+        #if DEBUG
+        debugResetHearts()
+        #endif
     }
 
     func loseHeart() {
+        guard !isUnlimited else { return }
         regenerateIfNeeded()
         guard heartsLost < Self.maxHearts else { return }
         if heartsLost == 0 { lastLossAt = Date() }

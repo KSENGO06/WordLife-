@@ -8,16 +8,22 @@ struct CategoryOverviewView: View {
     private let getSentenceChoicesUseCase: GetSentenceChoiceExercisesUseCase
     private let audioPlayer: AudioPlayer
     private let categoryId: String
+    private let categoryName: String
+    @Environment(\.dismiss) private var dismiss
 
     // MARK: - Розмітка хотспотів (DEBUG-інструмент)
+    // Показуємо тільки коли реально додаємо нову категорію з хотспотами —
+    // на 1 поставити тут true, розмітити, повернути на false.
+    private let showMarkingTool = false
     @State private var isMarkingMode = false
     @State private var placedHotspots: [String: CGPoint] = [:] // wordId -> (x,y) 0...1
     @State private var pendingTapPoint: CGPoint? = nil
     @State private var showWordPicker = false
     @State private var wordSearch = ""
 
-    init(categoryId: String, getWordsUseCase: GetWordsUseCase, getSceneUseCase: GetSceneUseCase, getSentencesUseCase: GetSentenceExercisesUseCase, getSentenceChoicesUseCase: GetSentenceChoiceExercisesUseCase, audioPlayer: AudioPlayer) {
+    init(categoryId: String, categoryName: String, getWordsUseCase: GetWordsUseCase, getSceneUseCase: GetSceneUseCase, getSentencesUseCase: GetSentenceExercisesUseCase, getSentenceChoicesUseCase: GetSentenceChoiceExercisesUseCase, audioPlayer: AudioPlayer) {
         self.categoryId = categoryId
+        self.categoryName = categoryName
         _viewModel = State(wrappedValue: CategoryOverviewViewModel(
             categoryId: categoryId,
             getWordsUseCase: getWordsUseCase,
@@ -53,7 +59,7 @@ struct CategoryOverviewView: View {
                 if viewModel.isLoading {
                     ProgressView()
                 } else if let error = viewModel.errorMessage {
-                    Text(error)
+                    Text(error).font(.appBodyRegular)
                 } else if let scene = viewModel.scene {
                     GeometryReader { geo in
                         let imageSize = UIImage(named: scene.imageAsset)?.size ?? geo.size
@@ -61,7 +67,10 @@ struct CategoryOverviewView: View {
                         let displayWidth = imageSize.width * scale
                         let displayHeight = imageSize.height * scale
                         let offsetX = (geo.size.width - displayWidth) / 2
-                        let offsetY = (geo.size.height - displayHeight) / 2
+                        let offsetY: CGFloat = 0 // фото приколоте до самого верху — без зазору під заголовком
+                        // Хотспот не має ховатись під заголовком/кнопкою "назад" зверху —
+                        // якщо його збережена координата потрапляє в цю зону, опускаємо його нижче.
+                        let headerSafeY = geo.safeAreaInsets.top + 50
 
                         ZStack(alignment: .bottom) {
                             // Розмитий фон — заповнює весь екран, ховає порожні смуги
@@ -77,7 +86,7 @@ struct CategoryOverviewView: View {
                             Image(scene.imageAsset)
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: geo.size.width, height: geo.size.height)
+                                .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
                                 .gesture(
                                     SpatialTapGesture().onEnded { value in
                                         guard isMarkingMode else { return }
@@ -98,7 +107,9 @@ struct CategoryOverviewView: View {
                                         audioPlayer.play(text: word.term, audioAssetName: word.audioAsset)
                                     } label: {
                                         Text(word.term)
-                                            .font(.caption.bold())
+                                            .font(.appLabel)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.7)
                                             .padding(.horizontal, 8)
                                             .padding(.vertical, 4)
                                             .background(.white.opacity(0.9))
@@ -106,7 +117,7 @@ struct CategoryOverviewView: View {
                                     }
                                     .position(
                                         x: offsetX + hotspot.x * displayWidth,
-                                        y: offsetY + hotspot.y * displayHeight
+                                        y: max(offsetY + hotspot.y * displayHeight, headerSafeY)
                                     )
                                 }
                             }
@@ -117,7 +128,7 @@ struct CategoryOverviewView: View {
                                     if let point = placedHotspots[wordId],
                                        let word = viewModel.words.first(where: { $0.id == wordId }) {
                                         Text(word.term)
-                                            .font(.caption2.bold())
+                                            .font(.appCaption2)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 3)
                                             .background(.orange)
@@ -140,44 +151,39 @@ struct CategoryOverviewView: View {
                                     NavigationLink {
                                         WordCardsView(categoryId: categoryId, getWordsUseCase: getWordsUseCase, audioPlayer: audioPlayer)
                                     } label: {
-                                        Text("Вивчити слова")
-                                            .font(.headline)
-                                            .frame(maxWidth: .infinity)
-                                            .padding()
-                                            .background(Color.accentColor)
-                                            .foregroundStyle(.white)
-                                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                                        Text("Learn words")
                                     }
+                                    .buttonStyle(.primary)
                                     NavigationLink {
                                         CategoryPracticeView(
                                             categoryId: categoryId,
+                                            categoryName: categoryName,
                                             getWordsUseCase: getWordsUseCase,
                                             getSentencesUseCase: getSentencesUseCase,
                                             getSentenceChoicesUseCase: getSentenceChoicesUseCase,
                                             audioPlayer: audioPlayer)
                                     } label: {
-                                        Text("Практикувати слова")
-                                                  .font(.headline)
-                                                  .frame(maxWidth: .infinity)
-                                                  .padding()
-                                                  .background(.white)
-                                                  .foregroundStyle(Color.accentColor)
-                                                  .clipShape(RoundedRectangle(cornerRadius: 16))
+                                        Text("Practice words")
                                     }
+                                    .buttonStyle(.secondary)
                                 }
                             }
                             .padding()
 
                             #if DEBUG
-                            markingPanel
-                                .padding()
-                                .position(x: geo.size.width - 110, y: 70)
+                            if showMarkingTool {
+                                markingPanel
+                                    .padding()
+                                    .position(x: geo.size.width - 110, y: 70)
+                            }
                             #endif
                         }
                     }
                     .ignoresSafeArea(edges: .top)
                 }
             }
+
+            headerOverlay
         }
         .task { await viewModel.load() }
         .sheet(isPresented: $showWordPicker) {
@@ -188,8 +194,8 @@ struct CategoryOverviewView: View {
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(word.term).font(.body)
-                                Text(word.translation).font(.caption).foregroundStyle(.secondary)
+                                Text(word.term).font(.appBodyRegular)
+                                Text(word.translation).font(.appCaption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             if placedHotspots[word.id] != nil {
@@ -213,6 +219,8 @@ struct CategoryOverviewView: View {
             }
             .presentationDetents([.medium, .large])
         }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     /// Прив'язує щойно тапнуту точку до обраного слова, друкує координати в консоль
@@ -223,6 +231,29 @@ struct CategoryOverviewView: View {
         print(String(format: "HOTSPOT: wordId=\"%@\" x=%.3f y=%.3f", word.id, point.x, point.y))
         pendingTapPoint = nil
         showWordPicker = false
+    }
+
+    /// Кнопка "назад" + назва категорії й кількість слів, поверх фото сцени.
+    /// Лише кнопка "назад" поверх фото — назву категорії й кількість слів
+    /// прибрали з цього екрана (вона й так видно з попереднього екрана).
+    /// Без затемнення-градієнта позаду: білий кружечок кнопки й так добре
+    /// видно на будь-якому фото, а сам градієнт лишав сірувату смугу зверху.
+    private var headerOverlay: some View {
+        HStack {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color(.label))
+                    .frame(width: 34, height: 34)
+                    .background(.white.opacity(0.9), in: Circle())
+                    .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
 
     /// Список слів цієї категорії у вигляді капсул — тимчасова заміна хотспотам,
@@ -240,7 +271,9 @@ struct CategoryOverviewView: View {
                         audioPlayer.play(text: word.term, audioAssetName: word.audioAsset)
                     } label: {
                         Text(word.term)
-                            .font(.caption.bold())
+                            .font(.appLabel)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(.white.opacity(0.9))
@@ -265,7 +298,9 @@ struct CategoryOverviewView: View {
                 isMarkingMode.toggle()
             } label: {
                 Text(isMarkingMode ? "Розмітка: ON" : "Розмітка: OFF")
-                    .font(.caption.bold())
+                    .font(.appLabel)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(isMarkingMode ? .orange : .black.opacity(0.6))
@@ -276,9 +311,9 @@ struct CategoryOverviewView: View {
             if isMarkingMode {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Тапни на фото — обереш слово зі списку")
-                        .font(.caption2.bold())
+                        .font(.appCaption2)
                     Text("\(placedHotspots.count)/\(viewModel.words.count) розмічено")
-                        .font(.caption2)
+                        .font(.appCaption2)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -293,7 +328,7 @@ struct CategoryOverviewView: View {
                             print("HOTSPOTS JSON (скопійовано в буфер):\n\(hotspotsJSON)")
                         } label: {
                             Text("Копіювати JSON")
-                                .font(.caption2.bold())
+                                .font(.appCaption2)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 5)
                                 .background(Color.accentColor)
@@ -304,7 +339,7 @@ struct CategoryOverviewView: View {
                             placedHotspots.removeAll()
                         } label: {
                             Text("Скинути")
-                                .font(.caption2.bold())
+                                .font(.appCaption2)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 5)
                                 .background(.red.opacity(0.85))
@@ -323,6 +358,7 @@ struct CategoryOverviewView: View {
     NavigationStack {
         CategoryOverviewView(
             categoryId: "bedroom",
+            categoryName: "Bedroom",
             getWordsUseCase: GetWordsUseCase(repository: BundledJSONContentRepository()),
             getSceneUseCase: GetSceneUseCase(repository: BundledJSONContentRepository()),
             getSentencesUseCase: GetSentenceExercisesUseCase(repository: BundledJSONContentRepository()),

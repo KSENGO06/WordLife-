@@ -8,6 +8,7 @@ struct SentenceChoiceSectionView: View {
     let onExit: ([String]) -> Void
 
     @State private var didFinishOrExit = false
+    @State private var showHeartsLimitSheet = false
 
     init(exercises: [SentenceChoiceExercise], resumingIds: [String]? = nil, audioPlayer: AudioPlayer, onComplete: @escaping () -> Void, onExit: @escaping ([String]) -> Void) {
         self.totalCount = exercises.count
@@ -34,21 +35,23 @@ struct SentenceChoiceSectionView: View {
                 ProgressView(value: progress)
                 HStack(spacing: 4) {
                     Image(systemName: "heart.fill").foregroundStyle(.red)
-                    Text("\(HeartsManager.shared.hearts)")
+                    Text(HeartsManager.shared.isUnlimited ? "∞" : "\(HeartsManager.shared.hearts)").font(AppFont.interBold(17)).lineLimit(1).minimumScaleFactor(0.7)
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 20)
 
             if let exercise = queue.first {
                 SentenceChoiceExerciseView(exercise: exercise, audioPlayer: audioPlayer) { isCorrect in
                     handleAnswer(isCorrect)
                 }
                 .id(exercise.id)
-                Spacer()
             }
         }
-        .padding(.top)
+        .padding(.top, 24)
         .onDisappear { exit() }
+        .sheet(isPresented: $showHeartsLimitSheet, onDismiss: { exit() }) {
+            LimitReachedSheetView(kind: .hearts)
+        }
     }
 
     private func handleAnswer(_ isCorrect: Bool) {
@@ -60,7 +63,7 @@ struct SentenceChoiceSectionView: View {
         if queue.isEmpty {
             finish()
         } else if HeartsManager.shared.hearts == 0 {
-            exit()
+            showHeartsLimitSheet = true
         }
     }
 

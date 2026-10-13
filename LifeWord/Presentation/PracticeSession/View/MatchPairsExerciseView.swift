@@ -15,10 +15,13 @@ struct MatchPairsExerciseView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Соотнесите слова\nз правильним перекладом")
-                .font(.headline)
-                .multilineTextAlignment(.center)
+            HStack {
+                ExerciseTitleLabel(text: "Match the words with the correct translation")
+                Spacer()
+            }
 
+            // Статичний відступ зверху (не Spacer) — щоб рядки опускались нижче
+            // одразу з відкриття вправи, а не тільки після якоїсь взаємодії.
             VStack(spacing: 12) {
                 ForEach(words) { word in
                     HStack(spacing: 12) {
@@ -28,8 +31,11 @@ struct MatchPairsExerciseView: View {
                             HStack {
                                 Image(systemName: "speaker.wave.2.fill")
                                 Text(word.term)
+                                    .font(AppFont.interMedium(16))
+                                    .lineLimit(1)
+                                Spacer(minLength: 0)
                             }
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
                             .background(Color(.secondarySystemBackground))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -40,6 +46,7 @@ struct MatchPairsExerciseView: View {
                 }
             }
             .padding(.horizontal)
+            .padding(.top, 40)
 
             FlowChips(words: chipPool, selectedId: selectedChipId) { chip in
                 selectedChipId = (selectedChipId == chip.id) ? nil : chip.id
@@ -60,7 +67,7 @@ struct MatchPairsExerciseView: View {
                 }
             }
             .disabled(placedWordForSlot.count < words.count)
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.primary)
             .frame(maxWidth: .infinity)
             .padding(.horizontal)
         }
@@ -70,8 +77,8 @@ struct MatchPairsExerciseView: View {
     }
 
     private var buttonTitle: String {
-        guard isChecked else { return "Перевірити" }
-        return hasWrong ? "Спробувати ще раз" : "Продовжити"
+        guard isChecked else { return "Check" }
+        return hasWrong ? "Try again" : "Continue"
     }
 
     @ViewBuilder
@@ -88,6 +95,8 @@ struct MatchPairsExerciseView: View {
             }
         } label: {
             Text(placedWordForSlot[word.id]?.translation ?? "")
+                .font(AppFont.interMedium(16))
+                .lineLimit(1)
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(slotColor(for: word))
@@ -101,8 +110,8 @@ struct MatchPairsExerciseView: View {
 
     private func slotColor(for word: Word) -> Color {
         if isChecked {
-            if wrongSlotIds.contains(word.id) { return .red.opacity(0.3) }
-            return placedWordForSlot[word.id] != nil ? .green.opacity(0.3) : Color(.secondarySystemBackground)
+            if wrongSlotIds.contains(word.id) { return Color.appIncorrect.opacity(0.35) }
+            return placedWordForSlot[word.id] != nil ? Color.appCorrect.opacity(0.35) : Color(.secondarySystemBackground)
         }
         return placedWordForSlot[word.id] != nil ? Color.blue.opacity(0.2) : Color(.secondarySystemBackground)
     }

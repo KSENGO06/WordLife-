@@ -3,6 +3,7 @@ import SwiftUI
 struct TranslationCheckView: View {
     @State private var viewModel: TranslationCheckViewModel
     @State private var didFinishOrExit = false
+    @State private var showHeartsLimitSheet = false
     let audioPlayer: AudioPlayer
     let onComplete: () -> Void
     let onExit: ([String]) -> Void
@@ -15,37 +16,47 @@ struct TranslationCheckView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Button { exit() } label: { Image(systemName: "xmark") }
-                ProgressView(value: viewModel.progress)
-                HStack(spacing: 4) {
-                    Image(systemName: "heart.fill").foregroundStyle(.red)
-                    Text("\(HeartsManager.shared.hearts)")
-                }
-            }
-            .padding(.horizontal)
-
+        Group {
             if let word = viewModel.currentWord {
-                ChooseTranslationExerciseView(
-                    word: word,
-                    options: viewModel.currentOptions,
-                    direction: viewModel.direction,
-                    audioPlayer: audioPlayer
-                ) { isCorrect in
-                    viewModel.answer(isCorrect: isCorrect)
-                    if viewModel.isFinished {
-                        finish()
-                    } else if HeartsManager.shared.hearts == 0 {
-                        exit()
+                VStack(spacing: 16) {
+                    HStack {
+                        Button { exit() } label: { Image(systemName: "xmark") }
+                        ProgressView(value: viewModel.progress)
+                        HStack(spacing: 4) {
+                            Image(systemName: "heart.fill").foregroundStyle(.red)
+                            Text(HeartsManager.shared.isUnlimited ? "∞" : "\(HeartsManager.shared.hearts)").font(AppFont.interBold(17)).lineLimit(1).minimumScaleFactor(0.7)
+                        }
                     }
+                    .padding(.horizontal, 20)
+
+                    ChooseTranslationExerciseView(
+                        word: word,
+                        options: viewModel.currentOptions,
+                        direction: viewModel.direction,
+                        audioPlayer: audioPlayer
+                    ) { isCorrect in
+                        viewModel.answer(isCorrect: isCorrect)
+                        if viewModel.isFinished {
+                            finish()
+                        } else if HeartsManager.shared.hearts == 0 {
+                            showHeartsLimitSheet = true
+                        }
+                    }
+                    .id(word.id)
+                    Spacer()
                 }
-                .id(word.id)
-                Spacer()
+                .padding(.top, 24)
+            } else {
+                // Останнє слово вже відповіли — секція завершується і
+                // fullScreenCover от-от закриється; показуємо порожній
+                // екран замість "голого" заголовка з прогресом/серцями.
+                Color.clear
             }
         }
-        .padding(.top)
         .onDisappear { exit() }
+        .sheet(isPresented: $showHeartsLimitSheet, onDismiss: { exit() }) {
+            LimitReachedSheetView(kind: .hearts)
+        }
     }
 
     private func finish() {

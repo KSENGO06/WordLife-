@@ -1,11 +1,12 @@
 import SwiftUI
-
+ 
 struct PuzzleExerciseView: View {
     let exercise: SentenceExercise
     let buildTarget: Bool
+    let categoryId: String
     let audioPlayer: AudioPlayer
     let onAnswer: (Bool) -> Void
-
+ 
     private var promptText: String {
         buildTarget ? exercise.nativeText : exercise.sentenceTokens.joined(separator: " ")
     }
@@ -15,26 +16,19 @@ struct PuzzleExerciseView: View {
     private var decoys: [String] {
         buildTarget ? exercise.targetDecoys : exercise.nativeDecoys
     }
-
+ 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Зберіть фразу").font(.headline)
-            Text(promptText)
-                .font(.title3)
-                .multilineTextAlignment(.center)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
-            SentenceBuilderView(
-                correctTokens: correctTokens,
-                decoys: decoys,
-                audioPlayer: audioPlayer,
-                audioText: exercise.sentenceTokens.joined(separator: " "),
-                audioAssetName: exercise.audioAsset,
-                onAnswer: onAnswer
-            )
-        }
+        SentenceBuilderView(
+            title: "Build the phrase",
+            promptText: promptText,
+            correctTokens: correctTokens,
+            decoys: decoys,
+            categoryId: categoryId,
+            audioPlayer: audioPlayer,
+            audioText: exercise.sentenceTokens.joined(separator: " "),
+            audioAssetName: exercise.audioAsset,
+            onAnswer: onAnswer
+        )
     }
 }
+ 

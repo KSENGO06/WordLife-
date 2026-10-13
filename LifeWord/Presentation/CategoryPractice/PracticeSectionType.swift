@@ -9,13 +9,22 @@ enum PracticeSectionType: String, Identifiable, CaseIterable {
 
     var title: String {
         switch self {
-        case .checkNative: return "Перевірка слів рідною мовою"
-        case .checkTarget: return "Перевірка слів англійською"
-        case .matching: return "Мечинг"
+        case .checkNative: return "Translate to Ukrainian"
+        case .checkTarget: return "Translate to English"
+        case .matching: return "Matching"
         }
     }
 
-    var subtitle: String { "Розширюйте свій словниковий запас" }
-    
-    
+    var subtitle: String { "Expand your vocabulary" }
+
+    /// Custom icon to drop into Assets.xcassets (falls back to an SF Symbol until it's there).
+    var iconAssetName: String { "exercise_\(rawValue)" }
+
+    var symbolName: String {
+        switch self {
+        case .checkNative: return "character.book.closed.fill"
+        case .checkTarget: return "textformat.abc"
+        case .matching: return "link"
+        }
+    }
 }

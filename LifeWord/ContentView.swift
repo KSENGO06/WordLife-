@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  LifeWord
-//
-//  Created by Oksana on 04.09.2026.
-//
-
 import SwiftUI
 
 struct ContentView: View {
