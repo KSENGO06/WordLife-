@@ -32,7 +32,6 @@ final class LevelViewModel {
         if isCorrect {
             if queue.isEmpty {
                 isFinished = true
-                print("🔵 LevelViewModel: isFinished = true")
             }
         } else {
             HeartsManager.shared.loseHeart()

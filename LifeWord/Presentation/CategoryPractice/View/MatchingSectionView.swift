@@ -13,7 +13,6 @@ struct MatchingSectionView: View {
     private let chunkSize = 5
 
     var body: some View {
-        let _ = print("🟣 MatchingSectionView.body викликано, chunks: \(chunks.count)")
         Group {
             if currentChunkIndex < chunks.count {
                 VStack(spacing: 16) {

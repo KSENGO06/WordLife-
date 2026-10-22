@@ -149,6 +149,51 @@ final class AuthManager: NSObject {
         currentUser = nil
     }
 
+    /// Остаточне видалення акаунту — вимога Apple (App Store Guideline
+    /// 5.1.1(v): будь-який застосунок, що дозволяє створити акаунт, має
+    /// дозволяти видалити його з самого застосунку).
+    ///
+    /// Спершу видаляє користувача у Firebase Auth. Firebase іноді вимагає
+    /// "свіжий" вхід перед видаленням (requiresRecentLogin) — у такому
+    /// випадку просимо користувача вийти й зайти знову, а не намагаємось
+    /// непомітно повторно авторизувати. Після успішного видалення чистимо
+    /// всі локальні дані (UserDefaults застосунку + App Group для віджета),
+    /// щоб на пристрої не лишилось жодного сліду акаунту.
+    @MainActor
+    func deleteAccount() async throws {
+        guard let user = Auth.auth().currentUser else { return }
+        do {
+            try await user.delete()
+        } catch {
+            let nsError = error as NSError
+            if let code = AuthErrorCode(rawValue: nsError.code), code == .requiresRecentLogin {
+                throw AuthError.firebase("For your security, please sign out, sign in again, and then delete your account.")
+            }
+            throw AuthError.firebase(Self.message(for: error))
+        }
+        Self.wipeAllLocalData()
+        currentUser = nil
+    }
+
+    /// Прибирає геть усі локальні дані застосунку: прогрес, стрік, серця,
+    /// підказки, аватарку, акцент озвучки, прапорець підписки — буквально
+    /// все, що колись записав UserDefaults.standard (ключі динамічні —
+    /// напр. HintsManager/CategoryProgressStore створюють окремий ключ на
+    /// кожну категорію, тож перелічувати їх поіменно нереально; натомість
+    /// чистимо весь "домен" застосунку одним проходом). Також чистимо
+    /// App Group, яким користується віджет домашнього екрана.
+    private static func wipeAllLocalData() {
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys {
+            defaults.removeObject(forKey: key)
+        }
+        if let widgetDefaults = UserDefaults(suiteName: WidgetWordsStore.appGroupId) {
+            for key in widgetDefaults.dictionaryRepresentation().keys {
+                widgetDefaults.removeObject(forKey: key)
+            }
+        }
+    }
+
     private static func message(for error: Error) -> String {
         let nsError = error as NSError
         guard let code = AuthErrorCode(rawValue: nsError.code) else {

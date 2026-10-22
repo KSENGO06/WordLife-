@@ -55,10 +55,28 @@ struct PaywallView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
+
+                legalLinks
                     .padding(.bottom, 12)
             }
         }
         .appScreenBackground()
+    }
+
+    // MARK: - Privacy Policy / Terms of Use
+
+    /// Посилання, яких вимагає Apple для будь-якого екрана з підпискою
+    /// (App Store Guideline 3.1.2) — відкриваються в Safari, самі сторінки
+    /// лежать у репозиторії застосунку (docs/) і роздаються через GitHub
+    /// Pages.
+    private var legalLinks: some View {
+        HStack(spacing: 6) {
+            Link("Privacy Policy", destination: URL(string: "https://ksengo06.github.io/WordLife-/privacy-policy.html")!)
+            Text("·")
+                .foregroundStyle(.secondary)
+            Link("Terms of Use", destination: URL(string: "https://ksengo06.github.io/WordLife-/terms-of-use.html")!)
+        }
+        .font(.appCaption)
     }
 
     // MARK: - Шапка

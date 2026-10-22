@@ -10,6 +10,9 @@ struct ProfileView: View {
 
     @State private var showSignOutConfirm = false
     @State private var showPaywall = false
+    @State private var showDeleteAccountConfirm = false
+    @State private var isDeletingAccount = false
+    @State private var deleteAccountErrorMessage: String?
     @State private var categories: [Category] = []
     /// categoryId -> скільки слів у цій категорії — для підрахунку
     /// "вивчених слів" (сума слів у повністю пройдених категоріях).
@@ -81,6 +84,8 @@ struct ProfileView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.secondary)
+
+                deleteAccountButton
             }
             .padding(20)
         }
@@ -103,6 +108,27 @@ struct ProfileView: View {
         .confirmationDialog("Sign out?", isPresented: $showSignOutConfirm, titleVisibility: .visible) {
             Button("Sign Out", role: .destructive) { AuthManager.shared.signOut() }
             Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog(
+            "Delete account?",
+            isPresented: $showDeleteAccountConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Account", role: .destructive) { deleteAccount() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes your account and all your progress. This can't be undone.")
+        }
+        .alert(
+            "Couldn't delete account",
+            isPresented: Binding(
+                get: { deleteAccountErrorMessage != nil },
+                set: { if !$0 { deleteAccountErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteAccountErrorMessage ?? "")
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
@@ -409,39 +435,77 @@ struct ProfileView: View {
     /// потрібний файл і тихо повертається до американської озвучки там, де
     /// британської версії ще нема, тож перемикач можна показувати вже зараз.
     private var accentSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        HStack {
             sectionLabel("Audio accent")
-
-            HStack(spacing: 10) {
+            Spacer()
+            HStack(spacing: 8) {
                 ForEach(AccentManager.Accent.allCases) { accent in
                     accentOptionButton(accent)
                 }
             }
         }
-        .padding(14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(.secondarySystemGroupedBackground)))
     }
 
+    /// Лише прапорець у колі — компактніше за попередню версію з підписом
+    /// "American"/"British" на повну ширину; вибраний варіант підсвічений
+    /// кольоровим кільцем, а не суцільною заливкою.
     private func accentOptionButton(_ accent: AccentManager.Accent) -> some View {
         let isSelected = AccentManager.shared.accent == accent
         return Button {
             AccentManager.shared.accent = accent
         } label: {
-            VStack(spacing: 6) {
-                Text(accent.flagEmoji)
-                    .font(.system(size: 26))
-                Text(accent.title)
-                    .font(.appCaption)
-                    .foregroundStyle(isSelected ? .white : .primary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(isSelected ? Color.appAccent : Color(.tertiarySystemBackground))
-            )
+            Text(accent.flagEmoji)
+                .font(.system(size: 22))
+                .frame(width: 42, height: 42)
+                .background(
+                    Circle().fill(isSelected ? Color.appAccent.opacity(0.15) : Color(.tertiarySystemBackground))
+                )
+                .overlay(
+                    Circle().strokeBorder(isSelected ? Color.appAccent : .clear, lineWidth: 2)
+                )
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Видалення акаунту
+
+    /// Окрема, навмисно менш помітна за "Sign out" кнопка — так само
+    /// `role: .destructive`, але текстова, без фону, щоб випадково не
+    /// тицьнути замість виходу з акаунту. Під час запиту показує спінер
+    /// замість напису і блокується від повторних натискань.
+    private var deleteAccountButton: some View {
+        Button(role: .destructive) {
+            showDeleteAccountConfirm = true
+        } label: {
+            if isDeletingAccount {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+            } else {
+                Text("Delete account")
+                    .font(.appCaption)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.red.opacity(0.75))
+        .padding(.top, 2)
+        .disabled(isDeletingAccount)
+    }
+
+    private func deleteAccount() {
+        isDeletingAccount = true
+        Task {
+            do {
+                try await AuthManager.shared.deleteAccount()
+                // currentUser стає nil -> RootView сам поверне на екран входу.
+            } catch {
+                deleteAccountErrorMessage = error.localizedDescription
+            }
+            isDeletingAccount = false
+        }
     }
 
     // MARK: - Спільне

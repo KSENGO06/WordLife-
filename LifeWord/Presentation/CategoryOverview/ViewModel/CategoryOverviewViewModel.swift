@@ -19,7 +19,6 @@ final class CategoryOverviewViewModel {
 
     @MainActor
     func load() async {
-        print("DEBUG: load() запущено")
         isLoading = true
         errorMessage = nil
         do {

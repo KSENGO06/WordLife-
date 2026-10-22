@@ -18,7 +18,6 @@ struct LevelSectionView: View {
     }
  
     var body: some View {
-        let _ = print("🟢 LevelSectionView.body викликано")
         Group {
             if let exercise = viewModel.currentExercise {
                 VStack(spacing: 16) {
@@ -52,11 +51,9 @@ struct LevelSectionView: View {
  
     private func finish() {
         guard !didFinishOrExit else {
-            print("🔴 finish() викликано повторно, ігнорую")
             return
         }
         didFinishOrExit = true
-        print("🟢 finish() -> onComplete()")
         onComplete()
     }
  

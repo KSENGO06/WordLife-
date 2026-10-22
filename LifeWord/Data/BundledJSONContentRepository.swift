@@ -11,7 +11,6 @@ final class BundledJSONContentRepository: ContentRepository {
             fatalError("content.json не знайдено або пошкоджено")
         }
         self.bundle = decoded
-        print("DEBUG: слів у bundle =", decoded.words.count)
     }
  
     func loadCategories() async throws -> [Category] { bundle.categories }

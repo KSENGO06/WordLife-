@@ -19,7 +19,9 @@ enum FontRegistrar {
 
         for name in fontFileNames {
             guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else {
+                #if DEBUG
                 print("⚠️ FontRegistrar: missing bundled font \(name).ttf")
+                #endif
                 continue
             }
             var error: Unmanaged<CFError>?
@@ -27,7 +29,9 @@ enum FontRegistrar {
                 if let error = error?.takeRetainedValue() {
                     // errSecDuplicateItem-type failures (already registered, e.g. in SwiftUI
                     // previews reusing a process) are harmless and expected here.
+                    #if DEBUG
                     print("⚠️ FontRegistrar: could not register \(name).ttf — \(error)")
+                    #endif
                 }
             }
         }

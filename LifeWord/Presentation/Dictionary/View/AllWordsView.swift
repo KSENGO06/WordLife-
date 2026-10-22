@@ -114,9 +114,15 @@ struct AllWordsView: View {
             Spacer(minLength: 0)
             ZStack {
                 Circle()
-                    .fill(.white.opacity(0.18))
-                    .frame(width: 72, height: 72)
+                    .fill(.white)
+                    .frame(width: 76, height: 76)
+                    .shadow(color: .black.opacity(0.12), radius: 6, y: 3)
+                // Сам малюнок героя в mascot_resting.png не займає центр
+                // свого квадратного полотна (права рука/лінія тягнеться в
+                // порожній простір праворуч) — зсуваємо на кілька пунктів,
+                // щоб видима фігурка була по центру кола, а не самe полотно.
                 MascotView(pose: .resting, size: 56)
+                    .offset(x: 3, y: -4)
             }
         }
         .padding(18)
